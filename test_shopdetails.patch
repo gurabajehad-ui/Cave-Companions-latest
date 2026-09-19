@@ -1,0 +1,110 @@
+--- src/components/ShopDetailsView.tsx
++++ src/components/ShopDetailsView.tsx
+@@ -1,6 +1,7 @@
+ import React, { useState, useEffect } from 'react';
+-import { Store, Percent, Save, Loader2, ChevronRight } from 'lucide-react';
++import { Store, Percent, Save, Loader2, ChevronRight, QrCode as QrCodeIcon, Download, RefreshCw, Eye } from 'lucide-react';
+ import { api } from '../services/api';
+ import { MerchantVerificationRecord } from '../types';
++import QRCode from 'qrcode';
+ 
+ interface ShopDetailsViewProps {
+@@ -15,10 +16,14 @@
+     silverDiscountPercent: 0,
+     bronzeDiscountPercent: 0
+   });
++  const [qrData, setQrData] = useState<{ exists: boolean; qrIdentifier: string } | null>(null);
++  const [qrImageUrl, setQrImageUrl] = useState<string>('');
++  const [generatingQr, setGeneratingQr] = useState(false);
++  const [showFullQr, setShowFullQr] = useState(false);
+ 
+   useEffect(() => {
+     fetchOffers();
++    fetchQr();
+   }, [shopId]);
+ 
+   const fetchOffers = async () => {
+@@ -37,6 +42,30 @@
+     } finally {
+       setLoading(false);
+     }
++  };
++
++  const fetchQr = async () => {
++    try {
++      const res = await api.getAdminShopQr(shopId);
++      if (res.success && res.qr) {
++        setQrData(res.qr);
++        if (res.qr.qrIdentifier) {
++          generateQrImage(res.qr.qrIdentifier);
++        }
++      }
++    } catch (err) {
++      console.error('Failed to fetch QR:', err);
++    }
++  };
++
++  const generateQrImage = async (identifier: string) => {
++    try {
++      const url = await QRCode.toDataURL(identifier, {
++        width: 600,
++        margin: 2,
++        color: { dark: '#0f172a', light: '#ffffff' }
++      });
++      setQrImageUrl(url);
++    } catch (err) {
++      console.error('Failed to generate QR image:', err);
++    }
+   };
+ 
+   const handleSave = async () => {
+@@ -51,6 +80,48 @@
+     }
+   };
+ 
++  const handleGenerateQr = async () => {
++    setGeneratingQr(true);
++    try {
++      const res = await api.generateAdminShopQr(shopId);
++      if (res.success && res.shop && res.shop.qrIdentifier) {
++        setQrData({ exists: true, qrIdentifier: res.shop.qrIdentifier });
++        generateQrImage(res.shop.qrIdentifier);
++      }
++    } catch (err) {
++      console.error('Failed to generate QR:', err);
++      alert('Failed to generate QR Code');
++    } finally {
++      setGeneratingQr(false);
++    }
++  };
++
++  const handleRegenerateQr = async () => {
++    if (!window.confirm('বর্তমান QR Code বাতিল করে নতুন QR Code তৈরি করতে চান?')) return;
++    setGeneratingQr(true);
++    try {
++      const res = await api.regenerateAdminShopQr(shopId);
++      if (res.success && res.shop && res.shop.qrIdentifier) {
++        setQrData({ exists: true, qrIdentifier: res.shop.qrIdentifier });
++        generateQrImage(res.shop.qrIdentifier);
++      }
++    } catch (err) {
++      console.error('Failed to regenerate QR:', err);
++      alert('Failed to regenerate QR Code');
++    } finally {
++      setGeneratingQr(false);
++    }
++  };
++
++  const handleDownloadQr = () => {
++    if (!qrImageUrl) return;
++    const a = document.createElement('a');
++    a.href = qrImageUrl;
++    a.download = `shop-${(verificationRecord?.shopName || 'qr').replace(/[^a-z0-9]/gi, '_').toLowerCase()}-qr-code.png`;
++    document.body.appendChild(a);
++    a.click();
++    document.body.removeChild(a);
++  };
++
+   if (loading) return <div className="p-8 text-center text-white">Loading...</div>;
+ 
+   return (

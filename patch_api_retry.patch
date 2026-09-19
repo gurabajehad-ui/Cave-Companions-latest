@@ -1,0 +1,24 @@
+--- src/services/api.ts
++++ src/services/api.ts
+@@ -56,7 +56,7 @@
+   localStorage.removeItem(ADMIN_KEY_STORAGE);
+ }
+ 
+-async function request<T>(endpoint: string, options: RequestInit = {}, isMerchant = false, timeoutMs = 30000): Promise<T> {
++async function request<T>(endpoint: string, options: RequestInit = {}, isMerchant = false, timeoutMs = 30000, retryCount = 0): Promise<T> {
+   const token = isMerchant ? getStoredMerchantToken() : getStoredToken();
+   const headers: Record<string, string> = {
+     'Content-Type': 'application/json',
+@@ -96,6 +96,12 @@
+       try {
+         data = JSON.parse(text);
+       } catch (parseError) {
++        // Detect AI Studio proxy holding page (cold start)
++        const isHoldingPage = text.includes('<!DOCTYPE html>') || text.includes('<html') || text.includes('Please wait');
++        if (isHoldingPage && retryCount < 3) {
++          await new Promise(resolve => setTimeout(resolve, 2500));
++          return request<T>(endpoint, options, isMerchant, timeoutMs, retryCount + 1);
++        }
+         console.warn(`Non-JSON response from ${endpoint} (status ${response.status}):`, text.slice(0, 150));
+         throw new Error(`সার্ভার প্রতিক্রিয়া দিতে ব্যর্থ হয়েছে (HTTP ${response.status}): ${text.slice(0, 50).trim()}`);
+       }

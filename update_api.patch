@@ -1,0 +1,33 @@
+--- src/services/api.ts
++++ src/services/api.ts
+@@ -87,19 +87,22 @@
+ 
+   const contentType = response.headers.get('content-type') || '';
+   let data: any = {};
+ 
+-  if (contentType.includes('application/json')) {
+-    try {
+-      data = await response.json();
+-    } catch (e) {
+-      throw new Error(`সার্ভার থেকে সঠিক ফরম্যাটের ডাটা পাওয়া যায়নি (HTTP ${response.status})`);
++  try {
++    const text = await response.text();
++    if (!text) {
++      data = { success: response.ok };
++    } else {
++      try {
++        data = JSON.parse(text);
++      } catch (parseError) {
++        console.warn(`Non-JSON response from ${endpoint} (status ${response.status}):`, text.slice(0, 150));
++        throw new Error(`সার্ভার প্রতিক্রিয়া দিতে ব্যর্থ হয়েছে (HTTP ${response.status})`);
++      }
+     }
+-  } else {
+-    const text = await response.text();
+-    console.warn(`Non-JSON response received from ${endpoint} (status ${response.status}):`, text.slice(0, 150));
+-    throw new Error(`সার্ভার প্রতিক্রিয়া দিতে ব্যর্থ হয়েছে (HTTP ${response.status})`);
++  } catch (err: any) {
++    throw new Error(err.message || `সার্ভার থেকে ডাটা পড়তে সমস্যা হয়েছে`);
+   }
+ 
+   if (!response.ok || data.success === false) {

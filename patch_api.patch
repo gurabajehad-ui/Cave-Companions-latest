@@ -1,0 +1,11 @@
+--- src/services/api.ts
++++ src/services/api.ts
+@@ -95,7 +95,7 @@
+         data = JSON.parse(text);
+       } catch (parseError) {
+         console.warn(`Non-JSON response from ${endpoint} (status ${response.status}):`, text.slice(0, 150));
+-        throw new Error(`সার্ভার প্রতিক্রিয়া দিতে ব্যর্থ হয়েছে (HTTP ${response.status})`);
++        throw new Error(`সার্ভার প্রতিক্রিয়া দিতে ব্যর্থ হয়েছে (HTTP ${response.status}): ${text.slice(0, 30)}`);
+       }
+     }
+   } catch (err: any) {

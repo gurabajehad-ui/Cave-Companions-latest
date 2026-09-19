@@ -1,0 +1,2 @@
+sed -i 's/defaultValue={selectedMosqueForEdit.latitude}/value={selectedMosqueForEdit.latitude}\n                    onChange={e => setSelectedMosqueForEdit({...selectedMosqueForEdit, latitude: parseFloat(e.target.value)})}/g' src/components/AdminDashboardView.tsx
+sed -i 's/defaultValue={selectedMosqueForEdit.longitude}/value={selectedMosqueForEdit.longitude}\n                    onChange={e => setSelectedMosqueForEdit({...selectedMosqueForEdit, longitude: parseFloat(e.target.value)})}/g' src/components/AdminDashboardView.tsx

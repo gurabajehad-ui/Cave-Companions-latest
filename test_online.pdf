@@ -1,0 +1,10 @@
+HTTP/1.1 500 Internal Server Error
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 170
+ETag: W/"aa-unKpNozoPgeI3SeXn5gXej1uCm8"
+Date: Mon, 24 Aug 2026 15:37:04 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"success":false,"message":"রিপোর্ট এক্সপোর্ট করতে ব্যর্থ। Cannot read properties of null (reading 'advanceWidth')"}

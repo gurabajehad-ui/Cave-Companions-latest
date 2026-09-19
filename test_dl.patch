@@ -1,0 +1,25 @@
+--- src/services/api.ts
++++ src/services/api.ts
+@@ -1071,6 +1071,21 @@
+     }
+     return data.shops || [];
+   },
++  
++  downloadAdminDocument: async (url: string, filename: string) => {
++    const adminToken = localStorage.getItem('adminToken');
++    const response = await fetch(url, {
++      headers: adminToken ? { 'Authorization': `Bearer ${adminToken}` } : {}
++    });
++    if (!response.ok) throw new Error('Failed to download document');
++    const blob = await response.blob();
++    const objectUrl = window.URL.createObjectURL(blob);
++    const a = document.createElement('a');
++    a.href = objectUrl;
++    a.download = filename;
++    document.body.appendChild(a);
++    a.click();
++    window.URL.revokeObjectURL(objectUrl);
++    document.body.removeChild(a);
++  },
+ 
+   updateAdminShop: (shopId: string, shopData: Partial<PartnerShop>, adminKey?: string) =>

@@ -1,0 +1,17 @@
+node_modules
+dist
+.git
+.gitignore
+.env
+.env.local
+*.log
+*.patch
+test-*.js
+test-*.ts
+test-*.cjs
+test-*.pdf
+audit_*.ts
+fix_*.cjs
+fix_*.mjs
+fix_*.js
+patch_*.cjs

@@ -1,0 +1,10 @@
+HTTP/1.1 500 Internal Server Error
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 190
+ETag: W/"be-9Er4sqQ3nG74imRubUxErTdDqEI"
+Date: Mon, 24 Aug 2026 15:36:50 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"success":false,"message":"আর্থিক রিপোর্ট তৈরি করতে ব্যর্থ হয়েছে। Cannot read properties of null (reading 'advanceWidth')"}
