@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
-import { db, UserRecord } from '../db.js';
+import { db, UserRecord, normalizePhoneNumber } from '../db.js';
 import { query } from '../pg.js';
 import { generateToken, requireAuth, AuthRequest } from '../auth.js';
 import { getTodayDateString, isFriday } from '../timezone.js';
@@ -88,6 +88,7 @@ router.post('/login', authRateLimiter, async (req, res) => {
     }
 
     const cleanIdentifier = identifier.trim();
+    const normalizedPassword = password.trim();
 
     // Lookup user by identifier (phone or email)
     const user = await db.getUserByIdentifier(cleanIdentifier);
@@ -117,13 +118,14 @@ router.post('/login', authRateLimiter, async (req, res) => {
     let isPasswordValid = false;
     if (user.passwordHash) {
       if (user.passwordHash.startsWith('$2a$') || user.passwordHash.startsWith('$2b$') || user.passwordHash.startsWith('$2y$')) {
-        isPasswordValid = bcrypt.compareSync(password.trim(), user.passwordHash) || bcrypt.compareSync(password, user.passwordHash);
+        isPasswordValid = bcrypt.compareSync(normalizedPassword, user.passwordHash) || bcrypt.compareSync(password, user.passwordHash);
       } else {
-        const sha256 = crypto.createHash('sha256').update(password.trim()).digest('hex');
-        if (user.passwordHash === sha256 || user.passwordHash === password.trim() || user.passwordHash === password) {
+        const sha256 = crypto.createHash('sha256').update(normalizedPassword).digest('hex');
+        const rawSha256 = crypto.createHash('sha256').update(password).digest('hex');
+        if (user.passwordHash === sha256 || user.passwordHash === rawSha256 || user.passwordHash === normalizedPassword || user.passwordHash === password) {
           isPasswordValid = true;
           // Auto upgrade to standard bcrypt
-          const newHash = bcrypt.hashSync(password.trim(), 10);
+          const newHash = bcrypt.hashSync(normalizedPassword, 10);
           db.updateUserPassword(user.id, newHash).catch(() => {});
         }
       }
@@ -167,8 +169,17 @@ router.post('/login', authRateLimiter, async (req, res) => {
       errorCode: err?.code,
       stack: err?.stack
     });
-    const isJwtError = err?.code === 'JWT_SECRET_MISSING' || err?.message?.includes('JWT_SECRET') || err?.message?.includes('jwt') || err?.name === 'JsonWebTokenError';
-    const isDbError = err?.message?.includes('database') || err?.code?.startsWith('57') || err?.code?.startsWith('08');
+    const errMsg = String(err?.message || '').toLowerCase();
+    const isJwtError = err?.code === 'JWT_SECRET_MISSING' || errMsg.includes('jwt_secret') || errMsg.includes('jwt') || err?.name === 'JsonWebTokenError';
+    const isDbError =
+      errMsg.includes('database') ||
+      errMsg.includes('postgresql') ||
+      errMsg.includes('cloud sql') ||
+      errMsg.includes('connection timed out') ||
+      errMsg.includes('connection refused') ||
+      errMsg.includes('socket') ||
+      err?.code?.startsWith('57') ||
+      err?.code?.startsWith('08');
     
     res.status(500).json({
       success: false,
@@ -475,7 +486,10 @@ router.post('/register-request', otpRequestRateLimiter, async (req, res) => {
       return;
     }
 
-    if (!password || typeof password !== 'string' || password.length < 6) {
+    const normalizedPassword = typeof password === 'string' ? password.trim() : '';
+    const normalizedConfirmPassword = typeof confirmPassword === 'string' ? confirmPassword.trim() : '';
+
+    if (!normalizedPassword || normalizedPassword.length < 6) {
       res.status(400).json({
         success: false,
         error: 'WEAK_PASSWORD',
@@ -484,7 +498,7 @@ router.post('/register-request', otpRequestRateLimiter, async (req, res) => {
       return;
     }
 
-    if (password !== confirmPassword) {
+    if (normalizedPassword !== normalizedConfirmPassword) {
       res.status(400).json({
         success: false,
         error: 'PASSWORD_MISMATCH',
@@ -494,6 +508,7 @@ router.post('/register-request', otpRequestRateLimiter, async (req, res) => {
     }
 
     const cleanPhone = phone.trim().replace(/[\s-]/g, '');
+    const normPhone = normalizePhoneNumber(cleanPhone);
     const cleanEmail = email ? email.trim().toLowerCase() : undefined;
     const normGender = gender && String(gender).toLowerCase() === 'female' ? 'female' : 'male';
 
@@ -520,8 +535,8 @@ router.post('/register-request', otpRequestRateLimiter, async (req, res) => {
       }
     }
 
-    // Hash the password securely
-    const passwordHash = bcrypt.hashSync(password, 10);
+    // Hash the normalized password securely
+    const passwordHash = bcrypt.hashSync(normalizedPassword, 10);
 
     // Generate cryptographically secure 6-digit OTP code
     const otpCode = crypto.randomInt(100000, 1000000).toString();
@@ -529,7 +544,7 @@ router.post('/register-request', otpRequestRateLimiter, async (req, res) => {
     // Save OTP with purpose = REGISTRATION_VERIFICATION
     await db.saveOtp(cleanPhone, otpCode, 'REGISTRATION_VERIFICATION', 10, {
       fullName: fullName.trim(),
-      phone: cleanPhone,
+      phone: normPhone,
       email: cleanEmail,
       gender: normGender,
       dateOfBirth,

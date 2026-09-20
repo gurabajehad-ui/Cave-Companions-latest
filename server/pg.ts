@@ -72,6 +72,15 @@ export let useSqliteFallback = false;
 let dbInitializationDone = false;
 let initializingPromise: Promise<void> | null = null;
 
+export function isProductionDatabaseMode(): boolean {
+  return (
+    process.env.NODE_ENV === 'production' ||
+    process.env.REQUIRE_POSTGRES === 'true' ||
+    process.env.DB_MODE === 'production' ||
+    process.env.DB_MODE === 'postgres'
+  );
+}
+
 function saveSqliteDb(db: any) {
   try {
     const data = db.export();
@@ -88,28 +97,38 @@ async function ensureDatabase(): Promise<void> {
   if (initializingPromise) return initializingPromise;
 
   initializingPromise = (async () => {
+    const isProd = isProductionDatabaseMode();
+    const sqlHost = resolveSqlHost();
+    console.log(`[Database Router] Target Engine: PostgreSQL (${sqlHost}) | Mode: ${isProd ? 'PRODUCTION (Fail-Fast)' : 'DEVELOPMENT'}`);
     console.log('[Database Router] Probing PostgreSQL connection...');
     
     // Create an isolated temporary pool solely for the connection probe to avoid any recursion on our overridden pool methods
     const tempPool = new Pool({
-      host: resolveSqlHost(),
+      host: sqlHost,
       user: process.env.SQL_USER || process.env.SQL_ADMIN_USER || 'postgres',
       password: process.env.SQL_PASSWORD || process.env.SQL_ADMIN_PASSWORD,
       database: process.env.SQL_DB_NAME || 'cloud_sql_development_database',
       port: Number(process.env.SQL_PORT) || 5432,
-      connectionTimeoutMillis: 2000,
+      connectionTimeoutMillis: 15000,
     });
 
     try {
-      // Execute a quick lazy connection test with a short timeout
+      // Execute a quick connection test
       await Promise.race([
         tempPool.query('SELECT 1'),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timed out after 2000ms')), 2000))
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timed out after 15000ms')), 15000))
       ]);
-      console.log('[Database Router] PostgreSQL connection probe successful. Running on live Cloud SQL.');
+      console.log('[Database Router] PostgreSQL connection probe successful. Running on live Cloud SQL PostgreSQL.');
       useSqliteFallback = false;
     } catch (probeErr: any) {
-      console.warn(`[Database Router] PostgreSQL probe failed: ${probeErr.message}. Activating resilient local WebAssembly SQLite fallback.`);
+      if (isProd) {
+        console.error(`\x1b[41m\x1b[37m[Database Router FATAL]\x1b[0m Cloud SQL PostgreSQL connection failed in PRODUCTION mode: ${probeErr.message}`);
+        console.error('[Database Router] Production Fail-Fast: SQLite fallback is strictly disallowed in production.');
+        useSqliteFallback = false;
+        throw new Error(`[Database Router FATAL] Cloud SQL PostgreSQL connection failed in production: ${probeErr.message}`);
+      }
+
+      console.warn(`[Database Router] PostgreSQL probe failed (${probeErr.message}). Activating isolated local development SQLite fallback.`);
       useSqliteFallback = true;
 
       // Initialize the WASM SQLite engine if not already loaded

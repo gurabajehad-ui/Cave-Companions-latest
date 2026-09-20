@@ -121,7 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return false;
     } catch (err: any) {
-      console.error('[AuthContext] User login error:', err.message);
+      console.warn('[AuthContext] User login error:', err.message);
       throw err;
     }
   };

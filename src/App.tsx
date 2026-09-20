@@ -117,6 +117,11 @@ export default function App() {
     if (path.startsWith('/rider') || hash === '#rider' || hash.startsWith('#rider-')) {
       return 'rider';
     }
+
+    // Explicit Partner Shop Merchant portal route
+    if (path.startsWith('/merchant') || hash === '#merchant' || hash.startsWith('#merchant-')) {
+      return 'merchant';
+    }
     
     // Specific shop item deep link
     if (hash.startsWith('#shop-')) {
@@ -131,7 +136,7 @@ export default function App() {
       return 'hisnul_muslim';
     }
     
-    // Explicit hash navigation
+    // Explicit hash navigation (e.g. #shops, #tokens, #profile)
     if (hash.startsWith('#') && hash.length > 1) {
       const cleanHash = hash.substring(1);
       const validTabs: ActiveTab[] = ['home', 'quran', 'hisnul_muslim', 'tokens', 'shops', 'market', 'profile', 'prayer_journey', 'notifications', 'support', 'merchant', 'rider', 'admin', 'cave_circle'];
@@ -140,33 +145,23 @@ export default function App() {
       }
     }
 
-    // If browser reload (refresh), restore saved tab from localStorage
+    // If browser reload (refresh), restore saved user tab from localStorage
+    // CRITICAL: Portal tabs ('merchant', 'rider', 'admin') are NEVER restored automatically on root URL reload
     try {
       const navEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
       const isReload = navEntry ? navEntry.type === 'reload' : (performance as any).navigation?.type === 1;
       if (isReload) {
         const savedTab = localStorage.getItem('cave_active_tab_current');
-        const validTabs: ActiveTab[] = ['home', 'quran', 'hisnul_muslim', 'tokens', 'shops', 'market', 'profile', 'prayer_journey', 'notifications', 'support', 'merchant', 'rider', 'admin', 'cave_circle'];
-        if (savedTab && validTabs.includes(savedTab as ActiveTab)) {
+        const validUserTabs: ActiveTab[] = ['home', 'quran', 'hisnul_muslim', 'tokens', 'shops', 'market', 'profile', 'prayer_journey', 'notifications', 'support', 'cave_circle'];
+        if (savedTab && validUserTabs.includes(savedTab as ActiveTab)) {
           return savedTab as ActiveTab;
         }
       }
     } catch (e) {
       // ignore
     }
-
-    // If active merchant or rider session exists without a user session, prioritize it
-    try {
-      if (getStoredMerchantToken() && !getStoredToken()) {
-        return 'merchant';
-      }
-      if (getStoredRiderToken() && !getStoredToken()) {
-        return 'rider';
-      }
-    } catch (e) {
-      // ignore
-    }
     
+    // Default root URL route is ALWAYS User-First ('home')
     return 'home';
   };
 
@@ -177,7 +172,13 @@ export default function App() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem('cave_active_tab_current', activeTab);
+      // Do not store portal tabs in cave_active_tab_current to ensure root URL visits remain User-First
+      if (['merchant', 'rider', 'admin'].includes(activeTab)) {
+        localStorage.removeItem('cave_active_tab_current');
+      } else {
+        localStorage.setItem('cave_active_tab_current', activeTab);
+      }
+
       if (!window.location.hash.startsWith('#shop-') && !window.location.hash.startsWith('#admin-')) {
         if (activeTab === 'home') {
           if (window.location.hash) {
@@ -554,7 +555,14 @@ export default function App() {
     
     // Run immediately on mount
     handleUrlNavigation();
-    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/admin') && window.location.pathname !== '/' && window.location.pathname !== '/quran') {
+    if (
+      typeof window !== 'undefined' && 
+      !window.location.pathname.startsWith('/admin') && 
+      !window.location.pathname.startsWith('/merchant') && 
+      !window.location.pathname.startsWith('/rider') && 
+      window.location.pathname !== '/' && 
+      window.location.pathname !== '/quran'
+    ) {
       window.history.replaceState(null, '', `/${window.location.search}`);
     }
 

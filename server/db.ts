@@ -2088,11 +2088,13 @@ class Database {
 
   async getUserByPhone(phone: string): Promise<UserRecord | null> {
     if (!phone) return null;
-    const normalized = normalizePhoneNumber(phone);
-    const clean = phone.trim();
-    const plus880 = '+880' + (normalized.startsWith('0') ? normalized.slice(1) : normalized);
-    const raw880 = '880' + (normalized.startsWith('0') ? normalized.slice(1) : normalized);
+    const clean = phone.trim().replace(/[\s-]/g, '');
+    const normalized = normalizePhoneNumber(clean);
+    if (!normalized) return null;
+
     const noZero = normalized.startsWith('0') ? normalized.slice(1) : normalized;
+    const plus880 = '+880' + noZero;
+    const raw880 = '880' + noZero;
 
     const res = await query(
       'SELECT * FROM users WHERE phone = $1 OR phone = $2 OR phone = $3 OR phone = $4 OR phone = $5',
