@@ -1096,10 +1096,11 @@ export default function App() {
               todayDateStr={todayDateStr}
             />
 
-            {/* Daily Nasiha Inspiration Card */}
-            <DailyNasihaCard
-              nasihaList={nasihaList}
-              randomHadithIndex={randomHadithIndex}
+            {/* Feature Discovery Auto-Rotating Card */}
+            <FeatureDiscoveryTicker
+              onNavigateTab={(tab) => setActiveTab(tab as ActiveTab)}
+              onOpenQibla={handleOpenQibla}
+              onOpenMosques={() => setShowMosqueModal(true)}
             />
 
             <AdBanner pageName="HOME" placementSlot="MIDDLE" />
@@ -1107,11 +1108,10 @@ export default function App() {
             {/* Sahri and Iftar Timetable Card (Salafi Principles, GPS-based) */}
             <SehriIftarCard userDistrict={user?.district} onShowToast={showToast} />
 
-            {/* Feature Discovery Auto-Rotating Card */}
-            <FeatureDiscoveryTicker
-              onNavigateTab={(tab) => setActiveTab(tab as ActiveTab)}
-              onOpenQibla={handleOpenQibla}
-              onOpenMosques={() => setShowMosqueModal(true)}
+            {/* Daily Nasiha Inspiration Card */}
+            <DailyNasihaCard
+              nasihaList={nasihaList}
+              randomHadithIndex={randomHadithIndex}
             />
 
             <AdBanner pageName="HOME" placementSlot="BOTTOM" />
