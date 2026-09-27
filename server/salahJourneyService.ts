@@ -1090,35 +1090,51 @@ export class SalahJourneyService {
     if (totalCompleted === 0) {
       return {
         headline: 'আমার কেভ জার্নি',
-        primaryStat: 'নতুন যাত্রা শুরু করুন',
-        secondaryStat: 'প্রতিটি সালাত আপনার জন্য অমূল্য',
-        badgeText: 'শুরু করুন'
+        headlineEn: 'My Cave Journey',
+        primaryStat: 'দ্বীনি জীবন ও আত্মিক অগ্রগতির পূর্ণাঙ্গ পথচলা →',
+        primaryStatEn: 'Your journey of faith, deeds & spiritual growth →',
+        secondaryStat: '',
+        secondaryStatEn: '',
+        badgeText: '',
+        badgeTextEn: ''
       };
     }
 
     if (currentStreak >= 3) {
       return {
         headline: 'আমার কেভ জার্নি',
-        primaryStat: `${toBnNumber(currentStreak)} দিনের streak চলছে 🔥`,
-        secondaryStat: `এই সপ্তাহে ${toBnNumber(weekStats.thisWeekCompleted)}/${toBnNumber(weekStats.totalPossible)} ওয়াক্ত`,
-        badgeText: `${toBnNumber(currentStreak)} দিন`
+        headlineEn: 'My Cave Journey',
+        primaryStat: `${toBnNumber(currentStreak)} দিনের streak 🔥`,
+        primaryStatEn: `${currentStreak}-day streak 🔥`,
+        secondaryStat: `এই সপ্তাহে ${toBnNumber(weekStats.thisWeekCompleted)} ওয়াক্ত`,
+        secondaryStatEn: `${weekStats.thisWeekCompleted} prayers this week`,
+        badgeText: `${toBnNumber(currentStreak)} দিন 🔥`,
+        badgeTextEn: `${currentStreak}d streak 🔥`
       };
     }
 
     if (weekStats.diff > 0) {
       return {
         headline: 'আমার কেভ জার্নি',
-        primaryStat: `এই সপ্তাহে ${toBnNumber(weekStats.thisWeekCompleted)}/${toBnNumber(weekStats.totalPossible)} ওয়াক্ত`,
-        secondaryStat: `গত সপ্তাহের তুলনায় ↑ ${toBnNumber(weekStats.diff)}% উন্নতি`,
-        badgeText: `↑ ${toBnNumber(weekStats.diff)}%`
+        headlineEn: 'My Cave Journey',
+        primaryStat: `এই সপ্তাহে ↑ ${toBnNumber(weekStats.diff)}% উন্নতি`,
+        primaryStatEn: `↑ ${weekStats.diff}% improvement this week`,
+        secondaryStat: `${toBnNumber(weekStats.thisWeekCompleted)} ওয়াক্ত সম্পন্ন`,
+        secondaryStatEn: `${weekStats.thisWeekCompleted} completed`,
+        badgeText: `↑ ${toBnNumber(weekStats.diff)}%`,
+        badgeTextEn: `↑ ${weekStats.diff}%`
       };
     }
 
     return {
       headline: 'আমার কেভ জার্নি',
-      primaryStat: `এই সপ্তাহে ${toBnNumber(weekStats.thisWeekCompleted)}/${toBnNumber(weekStats.totalPossible)} ওয়াক্ত`,
-      secondaryStat: 'ধারাবাহিক থাকার চেষ্টা করুন ✨',
-      badgeText: `${toBnNumber(weekStats.thisWeekCompleted)} ওয়াক্ত`
+      headlineEn: 'My Cave Journey',
+      primaryStat: `এই সপ্তাহে ${toBnNumber(weekStats.thisWeekCompleted)} ওয়াক্ত সম্পন্ন`,
+      primaryStatEn: `${weekStats.thisWeekCompleted} prayers this week`,
+      secondaryStat: 'ধারাবাহিক থাকুন ✨',
+      secondaryStatEn: 'Stay consistent ✨',
+      badgeText: '',
+      badgeTextEn: ''
     };
   }
 }

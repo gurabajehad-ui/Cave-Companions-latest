@@ -6762,7 +6762,7 @@ class Database {
     };
   }
 
-  async verifyOtp(identifier: string, code: string, purpose: string): Promise<{ valid: boolean; error?: string; registrationData?: any }> {
+  async verifyOtp(identifier: string, code: string, purpose: string, deleteOnSuccess: boolean = true): Promise<{ valid: boolean; error?: string; registrationData?: any }> {
     const clean = String(identifier || '').trim();
     const normalized = clean.includes('@') ? clean.toLowerCase() : normalizePhoneNumber(clean);
     const otp = await this.getOtp(normalized);
@@ -6787,7 +6787,9 @@ class Database {
       return { valid: false, error: 'INVALID_CODE' };
     }
 
-    await this.deleteOtp(normalized);
+    if (deleteOnSuccess) {
+      await this.deleteOtp(normalized);
+    }
     return {
       valid: true,
       registrationData: otp.registrationData

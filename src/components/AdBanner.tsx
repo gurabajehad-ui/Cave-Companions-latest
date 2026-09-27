@@ -20,10 +20,12 @@ const getDestinationLabel = (type: string, language: string) => {
 
 // Global in-memory ad cache to eliminate re-fetching latency and UI layout shift
 const adCache: Record<string, { ads: Advertisement[]; timestamp: number }> = {};
-const AD_CACHE_TTL = 10 * 1000; // 10 seconds for fast update after upload
+const inFlightRequests: Record<string, Promise<Advertisement[]>> = {};
+const AD_CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
 export function clearAdCache() {
   Object.keys(adCache).forEach(k => delete adCache[k]);
+  Object.keys(inFlightRequests).forEach(k => delete inFlightRequests[k]);
 }
 
 function AdBannerComponent({ pageName, placementSlot }: AdBannerProps) {
@@ -33,10 +35,10 @@ function AdBannerComponent({ pageName, placementSlot }: AdBannerProps) {
   const cacheKey = `${normalizedPageName}_${normalizedPlacementSlot}`;
 
   const cachedEntry = adCache[cacheKey];
-  const isCacheValid = cachedEntry && (Date.now() - cachedEntry.timestamp < AD_CACHE_TTL);
+  const isCacheValid = Boolean(cachedEntry && (Date.now() - cachedEntry.timestamp < AD_CACHE_TTL));
 
   const [ads, setAds] = useState<Advertisement[]>(() => isCacheValid ? cachedEntry.ads : []);
-  const [loading, setLoading] = useState<boolean>(() => !isCacheValid);
+  const [loading, setLoading] = useState<boolean>(() => !isCacheValid && !cachedEntry);
 
   useEffect(() => {
     if (isCacheValid) {
@@ -48,21 +50,30 @@ function AdBannerComponent({ pageName, placementSlot }: AdBannerProps) {
     let mounted = true;
     const fetchAds = async () => {
       try {
-        const fetchedAds = await api.getAdsForPage(normalizedPageName, normalizedPlacementSlot);
-        const validAds = Array.isArray(fetchedAds) ? fetchedAds : [];
+        if (!inFlightRequests[cacheKey]) {
+          inFlightRequests[cacheKey] = api.getAdsForPage(normalizedPageName, normalizedPlacementSlot)
+            .then(res => Array.isArray(res) ? res : [])
+            .finally(() => {
+              delete inFlightRequests[cacheKey];
+            });
+        }
+
+        const validAds = await inFlightRequests[cacheKey];
         adCache[cacheKey] = { ads: validAds, timestamp: Date.now() };
         if (mounted) {
           setAds(validAds);
           setLoading(false);
         }
       } catch (err) {
-        console.error('[AdBanner] Ad fetch error:', err);
         if (mounted) setLoading(false);
       }
     };
+
     fetchAds();
-    return () => { mounted = false; };
-  }, [normalizedPageName, normalizedPlacementSlot, cacheKey, isCacheValid]);
+    return () => {
+      mounted = false;
+    };
+  }, [cacheKey, isCacheValid, normalizedPageName, normalizedPlacementSlot]);
 
   if (loading) {
     return null;

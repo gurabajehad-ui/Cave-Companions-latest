@@ -37,6 +37,7 @@ import { MosqueDirectoryModal } from './components/MosqueDirectoryModal';
 import { LegalModal } from './components/LegalModals';
 import { QiblaFinderModal } from './components/QiblaFinderModal';
 import AdBanner from './components/AdBanner';
+import { FeatureDiscoveryTicker } from './components/FeatureDiscoveryTicker';
 import { ToastContainer, ToastMessage } from './components/Toast';
 
 import { ShopsView } from './components/ShopsView';
@@ -53,6 +54,7 @@ import { CaveMarketView } from './components/CaveMarketView';
 import { QuranMajidView } from './components/quran/QuranMajidView';
 import { HisnulMuslimView } from './components/hisnulMuslim/HisnulMuslimView';
 import { BlogView } from './components/BlogView';
+import { TokenRulesView } from './components/TokenRulesView';
 import { evaluateLocationSpoofing } from './utils/antiSpoofing';
 
 // Lightweight Fallback for Lazy Views
@@ -139,7 +141,7 @@ export default function App() {
     // Explicit hash navigation (e.g. #shops, #tokens, #profile)
     if (hash.startsWith('#') && hash.length > 1) {
       const cleanHash = hash.substring(1);
-      const validTabs: ActiveTab[] = ['home', 'quran', 'hisnul_muslim', 'tokens', 'shops', 'market', 'profile', 'prayer_journey', 'notifications', 'support', 'merchant', 'rider', 'admin', 'cave_circle'];
+      const validTabs: ActiveTab[] = ['home', 'quran', 'hisnul_muslim', 'tokens', 'shops', 'market', 'profile', 'prayer_journey', 'notifications', 'support', 'merchant', 'rider', 'admin', 'cave_circle', 'token_rules'];
       if (validTabs.includes(cleanHash as ActiveTab)) {
         return cleanHash as ActiveTab;
       }
@@ -619,6 +621,7 @@ export default function App() {
   const handleOpenTasbih = useCallback(() => setShowTasbihModal(true), []);
   const handleOpenJourney = useCallback(() => setActiveTab('prayer_journey'), []);
   const handleOpenTokens = useCallback(() => setActiveTab('tokens'), []);
+  const handleOpenTokenRules = useCallback(() => setActiveTab('token_rules'), []);
   const handleOpenQibla = useCallback(() => setShowQiblaModal(true), []);
   const handleOpenLegal = useCallback((type: 'privacy' | 'terms' | 'about') => setLegalModalType(type), []);
   const handleNavigateTab = useCallback((tab: string) => setActiveTab(tab as ActiveTab), []);
@@ -1000,10 +1003,10 @@ export default function App() {
       )}
 
       {/* Main Content Area */}
-      <main className={`flex-1 w-full max-w-2xl mx-auto px-4 pb-5 ${activeTab === 'home' ? 'pt-1.5' : 'pt-5'}`}>
+      <main className={`flex-1 w-full max-w-2xl mx-auto px-1 sm:px-3 pb-5 ${activeTab === 'home' ? 'pt-1.5' : 'pt-2.5 sm:pt-4'}`}>
         {/* Tab 1: HOME */}
         {activeTab === 'home' && (
-          <div className="space-y-5">
+          <div className="space-y-3 sm:space-y-3.5">
             <AdBanner pageName="HOME" placementSlot="TOP" />
             
             {/* Daily Progress Counter Card with Built-In Arc Countdown Timer */}
@@ -1016,6 +1019,7 @@ export default function App() {
               userGender={user?.gender}
               onOpenJourney={handleOpenJourney}
               onOpenTokens={handleOpenTokens}
+              onOpenTokenRules={handleOpenTokenRules}
             />
 
             <AdBanner pageName="HOME" placementSlot="BEFORE_PRODUCTS" />
@@ -1103,34 +1107,12 @@ export default function App() {
             {/* Sahri and Iftar Timetable Card (Salafi Principles, GPS-based) */}
             <SehriIftarCard userDistrict={user?.district} onShowToast={showToast} />
 
-            {/* Registered Mosques Banner Quick Link (Compact Secondary Section) */}
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={() => setShowMosqueModal(true)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowMosqueModal(true); }}
-              className="p-3 rounded-2xl bg-[#031d16] hover:bg-emerald-950/70 border border-emerald-800/40 transition-colors cursor-pointer flex items-center justify-between gap-3 text-white shadow-sm select-none"
-              style={{ contain: 'layout style', transform: 'translateZ(0)' }}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-emerald-950 border border-emerald-800/40 text-amber-300 flex items-center justify-center shrink-0">
-                  <Landmark className="w-4 h-4" />
-                </div>
-                <div className="flex items-baseline gap-2 min-w-0">
-                  <h4 className="text-xs font-bold text-slate-100 truncate">
-                    {language === 'bn' ? 'অনুমোদিত মসজিদ' : 'Approved Mosques'}
-                  </h4>
-                  <span className="text-[11px] text-emerald-300/80 font-medium truncate">
-                    {language === 'bn' 
-                      ? `• ${toBnNumber(mosques.length || 4)}টি সক্রিয়` 
-                      : `• ${mosques.length || 4} Active`}
-                  </span>
-                </div>
-              </div>
-              <span className="text-xs text-amber-300 font-bold shrink-0">
-                {language === 'bn' ? 'তালিকা দেখুন →' : 'View List →'}
-              </span>
-            </div>
+            {/* Feature Discovery Auto-Rotating Card */}
+            <FeatureDiscoveryTicker
+              onNavigateTab={(tab) => setActiveTab(tab as ActiveTab)}
+              onOpenQibla={handleOpenQibla}
+              onOpenMosques={() => setShowMosqueModal(true)}
+            />
 
             <AdBanner pageName="HOME" placementSlot="BOTTOM" />
           </div>
@@ -1254,6 +1236,17 @@ export default function App() {
             <SalahJourneyView
               onBack={() => setActiveTab('home')}
               onShowToast={showToast}
+            />
+          </React.Suspense>
+        )}
+
+        {/* Tab 7.5: TOKEN EARNING RULES & GUIDELINES (Dedicated Full-Screen View) */}
+        {activeTab === 'token_rules' && (
+          <React.Suspense fallback={<ViewLoadingFallback />}>
+            <TokenRulesView
+              onBack={() => setActiveTab('home')}
+              onNavigateToTokens={() => setActiveTab('tokens')}
+              onNavigateToShops={() => setActiveTab('shops')}
             />
           </React.Suspense>
         )}

@@ -43,7 +43,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-import { api, removeStoredAdminToken } from '../services/api';
+import { api, getStoredAdminToken, removeStoredAdminToken } from '../services/api';
 
 interface AnalyticsViewProps {
   onShowToast?: (type: 'success' | 'error' | 'info', title: string, message: string) => void;
@@ -65,6 +65,12 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onShowToast }) => 
 
   // Fetch Analytics Data
   const fetchAnalytics = async () => {
+    const token = getStoredAdminToken();
+    if (!token) {
+      setError('অনুমতি নেই বা এডমিন সেশন মেয়াদোত্তীর্ণ। অনুগ্রহ করে এডমিন প্যানেলে পুনঃলগইন করুন।');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {

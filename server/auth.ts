@@ -60,6 +60,7 @@ export function generateToken(user: UserRecord): string {
         sub: user.id,
         phone: user.phone,
         fullName: user.fullName,
+        role: (user as any).role || 'USER',
         type: 'user'
       },
       secret,
@@ -182,7 +183,7 @@ export function generateRegistrationToken(phone: string): string {
   }
 }
 
-export function verifyToken(token: string): { sub: string; type: string; phone?: string; fullName?: string } | null {
+export function verifyToken(token: string): { sub: string; type: string; phone?: string; fullName?: string; role?: string } | null {
   try {
     const payload = jwt.verify(token, getJwtSecret()) as any;
     if (payload && typeof payload.sub === 'string' && payload.type === 'user') {
@@ -194,7 +195,7 @@ export function verifyToken(token: string): { sub: string; type: string; phone?:
   }
 }
 
-export function verifyUserToken(token: string): { sub: string; type: string; phone?: string; fullName?: string } | null {
+export function verifyUserToken(token: string): { sub: string; type: string; phone?: string; fullName?: string; role?: string } | null {
   return verifyToken(token);
 }
 

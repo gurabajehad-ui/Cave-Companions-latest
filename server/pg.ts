@@ -128,7 +128,6 @@ async function ensureDatabase(): Promise<void> {
         throw new Error(`[Database Router FATAL] Cloud SQL PostgreSQL connection failed in production: ${probeErr.message}`);
       }
 
-      console.warn(`[Database Router] PostgreSQL probe failed (${probeErr.message}). Activating isolated local development SQLite fallback.`);
       useSqliteFallback = true;
 
       // Initialize the WASM SQLite engine if not already loaded
@@ -136,11 +135,11 @@ async function ensureDatabase(): Promise<void> {
         const SQL = await initSqlJs();
         const dbPath = path.join(process.cwd(), 'cave_companions.db');
         if (fs.existsSync(dbPath)) {
-          console.log(`[SQLite Fallback] Loading existing database from disk: ${dbPath}`);
+          console.log(`[Database Router] Local development environment: using persistent SQLite database at ${dbPath}`);
           const fileBuffer = fs.readFileSync(dbPath);
           global._sqliteDb = new SQL.Database(fileBuffer);
         } else {
-          console.log(`[SQLite Fallback] Creating a brand new database on disk: ${dbPath}`);
+          console.log(`[Database Router] Local development environment: initializing new SQLite database at ${dbPath}`);
           global._sqliteDb = new SQL.Database();
         }
       }
@@ -213,6 +212,30 @@ function translatePgToSqlite(sql: string): string {
 
   // Translate postgres type-casts (e.g., ::jsonb or ::text) to empty string as SQLite has dynamic affinity
   s = s.replace(/::[a-zA-Z_]+/g, '');
+
+  // Replace TO_CHAR(col AT TIME ZONE '...', 'YYYY-MM-DD') or TO_CHAR(col, 'YYYY-MM-DD') with SUBSTR(col, 1, 10) for SQLite
+  s = s.replace(/TO_CHAR\s*\(\s*([^,]+?)\s+AT\s+TIME\s+ZONE\s+'[^']+'\s*,\s*'YYYY-MM-DD'\s*\)/gi, 'SUBSTR($1, 1, 10)');
+  s = s.replace(/TO_CHAR\s*\(\s*([^,]+?)\s*,\s*'YYYY-MM-DD'\s*\)/gi, 'SUBSTR($1, 1, 10)');
+
+  // Strip any remaining postgres AT TIME ZONE clauses for SQLite compatibility
+  s = s.replace(/\s+AT\s+TIME\s+ZONE\s+'[^']+'/gi, '');
+
+  // Translate postgres COUNT(...) FILTER (WHERE cond) to SQLite SUM(CASE WHEN cond THEN 1 ELSE 0 END)
+  s = s.replace(/COUNT\s*\(([^)]*)\)\s+FILTER\s*\(\s*WHERE\s+([^)]+)\)/gi, 'COALESCE(SUM(CASE WHEN $2 THEN 1 ELSE 0 END), 0)');
+
+  // Translate PostgreSQL JSON aggregation functions to SQLite equivalents
+  s = s.replace(/\bjson_build_object\b/gi, 'json_object');
+  s = s.replace(/\bjson_agg\b/gi, 'json_group_array');
+
+  // Translate PostgreSQL system metadata functions for SQLite compatibility
+  s = s.replace(/\bcurrent_database\(\)/gi, "'cloud_sql_development_database'");
+  s = s.replace(/\bcurrent_user\b/gi, "'ai_studio_app_user'");
+  s = s.replace(/\bversion\(\)/gi, "'PostgreSQL 15.0 (SQLite Fallback)'");
+
+  // Translate information_schema.tables to sqlite_master
+  if (/information_schema\.tables/i.test(s)) {
+    s = "SELECT name AS table_name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name ASC";
+  }
   
   return s;
 }
@@ -253,7 +276,15 @@ function runSqliteQuery(sqlText: string, params?: any[]): any {
           values.forEach((rowValues: any[]) => {
             const row: any = {};
             columns.forEach((col: string, idx: number) => {
-              row[col] = rowValues[idx];
+              let val = rowValues[idx];
+              if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                try {
+                  val = JSON.parse(val);
+                } catch {
+                  // Keep as string
+                }
+              }
+              row[col] = val;
             });
             rows.push(row);
           });

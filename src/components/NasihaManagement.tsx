@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Edit3, Save, X, BookOpen, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
-import { api } from '../services/api';
+import { api, getStoredAdminToken } from '../services/api';
 
 export const NasihaManagement: React.FC = () => {
   const [list, setList] = useState<any[]>([]);
@@ -10,6 +10,11 @@ export const NasihaManagement: React.FC = () => {
   const [form, setForm] = useState({ textBn: '', sourceBn: '', active: true });
 
   const fetchList = useCallback(async (isInitial = false) => {
+    const token = getStoredAdminToken();
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     if (isInitial) {
       setLoading(true);
     }

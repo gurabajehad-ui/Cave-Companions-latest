@@ -684,60 +684,6 @@ export const MyTokenView: React.FC<MyTokenViewProps> = ({
         </div>
       )}
 
-      {/* Rules & Guidelines Card */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-4 shadow-md space-y-3">
-        <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          <span>{t('token.rulesTitle')}</span>
-        </h3>
-
-        <div className="space-y-2.5">
-          <div className="flex items-center gap-3 p-2 rounded-xl bg-amber-950/30 border border-amber-500/10 text-xs">
-            <span className="text-lg">🥇</span>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-              <span className="font-extrabold text-amber-300">{language === 'bn' ? 'গোল্ড টোকেন (৫ ওয়াক্ত):' : 'Gold Token (5 Waqt):'}</span>
-              <span className="text-slate-300">{t('token.ruleGold')}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-800/30 border border-slate-500/10 text-xs">
-            <span className="text-lg">🥈</span>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-              <span className="font-extrabold text-slate-200">{language === 'bn' ? 'সিলভার টোকেন (৪ ওয়াক্ত):' : 'Silver Token (4 Waqt):'}</span>
-              <span className="text-slate-300">{t('token.ruleSilver')}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 p-2 rounded-xl bg-amber-950/20 border border-amber-800/10 text-xs">
-            <span className="text-lg">🥉</span>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-              <span className="font-extrabold text-amber-400">{language === 'bn' ? 'ব্রোঞ্জ টোকেন (৩ ওয়াক্ত):' : 'Bronze Token (3 Waqt):'}</span>
-              <span className="text-slate-300">{t('token.ruleBronze')}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-2xl text-[11px] text-slate-300 space-y-1">
-          <p className="font-bold text-amber-400 flex items-center gap-1">
-            <Info className="w-3.5 h-3.5 text-amber-400" />
-            <span>{language === 'bn' ? 'টোকেন ব্যবহারের নিয়ম:' : 'Usage Rules:'}</span>
-          </p>
-          <ul className="space-y-0.5 pl-1 text-slate-400">
-            <li className="flex items-start gap-1">
-              <span className="text-amber-500">•</span>
-              <span>{t('token.ruleUsage1')}</span>
-            </li>
-            <li className="flex items-start gap-1">
-              <span className="text-amber-500">•</span>
-              <span>{t('token.ruleUsage2')}</span>
-            </li>
-            <li className="flex items-start gap-1">
-              <span className="text-amber-500">•</span>
-              <span>{t('token.ruleUsage3')}</span>
-            </li>
-          </ul>
-        </div>
-      </div>
 
       {/* ==================================================== */}
       {/* MODAL 1: TOKEN USE CONFIRMATION DIALOG (Phase 5)     */}

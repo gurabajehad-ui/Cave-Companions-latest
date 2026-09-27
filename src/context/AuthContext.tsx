@@ -194,9 +194,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateProfile = async (fullName: string, photoUrl?: string, address?: string): Promise<boolean> => {
+  const updateProfile = async (
+    data: {
+      fullName?: string;
+      photoUrl?: string;
+      address?: string;
+      district?: string;
+      upazila?: string;
+      dateOfBirth?: string;
+      maritalStatus?: string;
+      gender?: string;
+    } | string,
+    photoUrl?: string,
+    address?: string
+  ): Promise<boolean> => {
     try {
-      const response = await api.updateProfile(fullName, photoUrl, address);
+      const response = await api.updateProfile(data as any, photoUrl, address);
       if (response.success && response.user) {
         setUser(response.user);
         return true;

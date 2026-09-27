@@ -617,7 +617,7 @@ merchantRoutes.post('/password-reset/verify', authRateLimiter, async (req, res: 
     const cleanPhone = normalizePhoneNumber(String(rawInput).trim());
     const cleanCode = String(inputCode).trim();
 
-    const verification = await db.verifyOtp(cleanPhone, cleanCode, 'MERCHANT_PASSWORD_RESET');
+    const verification = await db.verifyOtp(cleanPhone, cleanCode, 'MERCHANT_PASSWORD_RESET', false);
 
     if (!verification.valid) {
       let errMsg = 'ভেরিফিকেশন কোডটি সঠিক নয় বা এর মেয়াদ শেষ হয়ে গেছে।';

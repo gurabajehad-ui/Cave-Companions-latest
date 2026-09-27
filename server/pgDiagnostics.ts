@@ -1,4 +1,4 @@
-import { pool, query } from './pg.js';
+import { pool, query, useSqliteFallback } from './pg.js';
 
 export interface DbDiagnosticResult {
   status: 'HEALTHY' | 'DEGRADED' | 'FAILED';
@@ -36,7 +36,7 @@ const EXPECTED_TABLES = [
   'notifications',
   'support_tickets',
   'admin_accounts',
-  'audit_logs',
+  'security_audit_logs',
   'global_config',
   'nasiha',
   'blogs'
@@ -110,12 +110,12 @@ export async function runPostgresDiagnostic(): Promise<DbDiagnosticResult> {
     const result: DbDiagnosticResult = {
       status: isHealthy ? 'HEALTHY' : 'DEGRADED',
       pingMs: pingDuration,
-      database: meta?.db || dbName,
-      user: meta?.usr || dbUser,
-      host,
-      port,
+      database: useSqliteFallback ? 'cave_companions.db' : (meta?.db || dbName),
+      user: useSqliteFallback ? 'local_dev' : (meta?.usr || dbUser),
+      host: useSqliteFallback ? 'local (SQLite Fallback)' : host,
+      port: useSqliteFallback ? 0 : port,
       serverTime: meta?.server_time || new Date().toISOString(),
-      pgVersion: meta?.ver ? meta.ver.split(' on ')[0] : 'PostgreSQL',
+      pgVersion: useSqliteFallback ? 'SQLite 3 (WASM Development Fallback)' : (meta?.ver ? meta.ver.split(' on ')[0] : 'PostgreSQL'),
       pool: poolStats,
       schema: {
         schemaVisible: foundTables.length > 0,
@@ -164,12 +164,15 @@ export async function runPostgresDiagnostic(): Promise<DbDiagnosticResult> {
  */
 function logDiagnosticReport(result: DbDiagnosticResult) {
   const line = '═'.repeat(64);
+  const headerTitle = useSqliteFallback ? 'DATABASE DIAGNOSTIC (SQLITE DEV FALLBACK)' : 'POSTGRESQL CONNECTION & SCHEMA DIAGNOSTIC';
+  const padding = Math.max(0, Math.floor((64 - headerTitle.length) / 2));
   console.log(`\n\x1b[36m╔${line}╗\x1b[0m`);
-  console.log(`\x1b[36m║\x1b[1m\x1b[37m              POSTGRESQL CONNECTION & SCHEMA DIAGNOSTIC         \x1b[0m\x1b[36m║\x1b[0m`);
+  console.log(`\x1b[36m║\x1b[1m\x1b[37m${' '.repeat(padding)}${headerTitle}${' '.repeat(64 - padding - headerTitle.length)}\x1b[0m\x1b[36m║\x1b[0m`);
   console.log(`\x1b[36m╠${line}╣\x1b[0m`);
 
   if (result.status === 'HEALTHY') {
-    console.log(`\x1b[36m║\x1b[0m  \x1b[32m✔ Status:\x1b[0m \x1b[1m\x1b[32mACTIVE & HEALTHY\x1b[0m`);
+    const statusText = useSqliteFallback ? 'ACTIVE & HEALTHY (Local SQLite Fallback)' : 'ACTIVE & HEALTHY';
+    console.log(`\x1b[36m║\x1b[0m  \x1b[32m✔ Status:\x1b[0m \x1b[1m\x1b[32m${statusText}\x1b[0m`);
     console.log(`\x1b[36m║\x1b[0m  \x1b[32m✔ Query Test (SELECT 1):\x1b[0m \x1b[32mSUCCESS\x1b[0m (${result.pingMs}ms)`);
   } else if (result.status === 'DEGRADED') {
     console.log(`\x1b[36m║\x1b[0m  \x1b[33m⚠ Status:\x1b[0m \x1b[1m\x1b[33mDEGRADED\x1b[0m (Missing tables: ${result.schema.missingTables.join(', ')})`);
@@ -179,7 +182,7 @@ function logDiagnosticReport(result: DbDiagnosticResult) {
     console.log(`\x1b[36m║\x1b[0m  \x1b[31m✖ Error:\x1b[0m ${result.error}`);
   }
 
-  console.log(`\x1b[36m║\x1b[0m  \x1b[34m• Target DB:\x1b[0m ${result.database} | \x1b[34mUser:\x1b[0m ${result.user} | \x1b[34mHost:\x1b[0m ${result.host}:${result.port}`);
+  console.log(`\x1b[36m║\x1b[0m  \x1b[34m• Target DB:\x1b[0m ${result.database} | \x1b[34mUser:\x1b[0m ${result.user} | \x1b[34mHost:\x1b[0m ${result.host}${result.port ? `:${result.port}` : ''}`);
   console.log(`\x1b[36m║\x1b[0m  \x1b[34m• Engine:\x1b[0m ${result.pgVersion}`);
   console.log(`\x1b[36m║\x1b[0m  \x1b[34m• Pool Status:\x1b[0m Total: ${result.pool.totalCount} | Idle: ${result.pool.idleCount} | Waiting: ${result.pool.waitingCount} | Max: ${result.pool.maxLimit}`);
   
@@ -200,8 +203,9 @@ function logDiagnosticReport(result: DbDiagnosticResult) {
   const cloudRunRevision = process.env.K_REVISION || 'local';
   console.log(JSON.stringify({
     severity: result.status === 'HEALTHY' ? 'INFO' : result.status === 'DEGRADED' ? 'WARNING' : 'ERROR',
-    message: `[PostgreSQL Diagnostic] Status: ${result.status} (${result.pingMs}ms, ${result.pool.totalCount} active connections, ${result.schema.tablesFound.length} tables verified)`,
+    message: `[Database Diagnostic] Status: ${result.status} (${result.pingMs}ms, ${result.schema.tablesFound.length} tables verified)`,
     component: 'db-diagnostic',
+    engine: useSqliteFallback ? 'sqlite-fallback' : 'postgresql',
     cloudRun: {
       service: cloudRunService,
       revision: cloudRunRevision

@@ -5,10 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "node convert-icons.js && vite build && node build-server.js && node copy-assets.js",
-    "start": "node dist/server.cjs",
+    "build": "vite build",
+    "start": "tsx server.ts",
     "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

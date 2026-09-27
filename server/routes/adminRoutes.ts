@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
 import { db, SupportTicketStatus, ShopStatus, AdminPermission } from '../db.js';
-import { generateAdminToken, verifyAdminToken, verifyUserToken } from '../auth.js';
+import { generateAdminToken, verifyAdminToken, verifyUserToken, verifyMerchantToken } from '../auth.js';
 import { NotificationService } from '../services/notificationService.js';
 import { adminAuthRateLimiter } from '../rateLimiter.js';
 import {
@@ -94,8 +94,17 @@ const MASTER_PERMISSIONS: AdminPermission[] = [
 async function requireAdmin(req: any, res: any, next: any) {
   const authHeader = req.headers.authorization;
   
-  // Extract token strictly from Authorization header (Bearer <token>) or query parameter fallback
-  let token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7).trim() : null;
+  // Extract token from Authorization header (with or without 'Bearer '), custom headers, or query parameters
+  let token: string | null = null;
+  if (authHeader) {
+    token = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : authHeader.trim();
+  }
+  if (!token && req.headers['x-admin-token']) {
+    token = String(req.headers['x-admin-token']).trim();
+  }
+  if (!token && req.headers['x-admin-key']) {
+    token = String(req.headers['x-admin-key']).trim();
+  }
   if (!token && (req.query.adminToken || req.query.token)) {
     token = String(req.query.adminToken || req.query.token).trim();
   }
@@ -183,7 +192,18 @@ async function requireAdmin(req: any, res: any, next: any) {
     }
   }
 
-  // 3. Keep fallback merchant check for explicit ADMIN or SUPER_ADMIN role (backward compatibility)
+  // 3. Check merchant token for explicit ADMIN or SUPER_ADMIN role (JWT or legacy token)
+  const merchantPayload = verifyMerchantToken(token);
+  if (merchantPayload && (merchantPayload.role === 'ADMIN' || merchantPayload.role === 'SUPER_ADMIN')) {
+    req.admin = {
+      id: merchantPayload.id || merchantPayload.sub,
+      name: merchantPayload.name || 'Merchant Admin',
+      role: merchantPayload.role,
+      permissions: MASTER_PERMISSIONS
+    };
+    return next();
+  }
+
   if (token.startsWith('MCH-')) {
     const merchant = await db.getMerchantById(token);
     if (merchant && (merchant.role === 'ADMIN' || merchant.role === 'SUPER_ADMIN')) {
@@ -202,11 +222,11 @@ async function requireAdmin(req: any, res: any, next: any) {
   if (userPayload && userPayload.sub) {
     try {
       const user = await db.getUserById(userPayload.sub);
-      const userRole = (user as any)?.role;
-      if (user && (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN')) {
+      const userRole = (user as any)?.role || userPayload.role;
+      if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
         req.admin = {
-          id: user.id,
-          name: user.fullName || 'Admin User',
+          id: user?.id || userPayload.sub,
+          name: user?.fullName || userPayload.fullName || 'Admin User',
           role: userRole,
           permissions: MASTER_PERMISSIONS
         };

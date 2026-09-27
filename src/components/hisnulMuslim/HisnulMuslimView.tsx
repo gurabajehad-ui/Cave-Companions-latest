@@ -109,8 +109,8 @@ export const HisnulMuslimView: React.FC<HisnulMuslimViewProps> = ({ onBack, onSh
   return (
     <div className="min-h-screen bg-[#01140e] text-white flex flex-col pb-12">
       {/* Top Header */}
-      <div className="sticky top-0 z-30 bg-gradient-to-b from-[#032219] via-[#021812] to-[#01140e]/95 backdrop-blur-md border-b border-emerald-800/60 px-4 py-3 sm:px-6">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+      <div className="sticky top-0 z-30 bg-gradient-to-b from-[#032219] via-[#021812] to-[#01140e]/95 backdrop-blur-md border-b border-emerald-800/60 px-1.5 py-2.5 sm:px-3">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => {
@@ -149,7 +149,7 @@ export const HisnulMuslimView: React.FC<HisnulMuslimViewProps> = ({ onBack, onSh
         </div>
 
         {/* Search Bar */}
-        <div className="max-w-4xl mx-auto mt-3">
+        <div className="max-w-2xl mx-auto mt-2.5">
           <div className="relative">
             <Search className="w-4 h-4 text-emerald-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
@@ -172,7 +172,7 @@ export const HisnulMuslimView: React.FC<HisnulMuslimViewProps> = ({ onBack, onSh
       </div>
 
       {/* Main Container */}
-      <div className="max-w-4xl mx-auto w-full p-4 sm:p-6 space-y-5 flex-1">
+      <div className="max-w-2xl mx-auto w-full px-0.5 sm:px-1 py-3 space-y-3.5 flex-1">
         {/* Search View Mode */}
         {searchQuery.trim() ? (
           <div className="space-y-3">

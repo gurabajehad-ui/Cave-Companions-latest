@@ -253,7 +253,7 @@ export const SurahReaderView: React.FC<SurahReaderViewProps> = ({
     <div className="min-h-screen bg-gradient-to-b from-[#02110c] to-[#010906] text-white pb-32">
       {/* Immersive Top Bar */}
       <div className="sticky top-0 z-30 bg-[#02110c]/95 backdrop-blur-md border-b border-emerald-900/60 shadow-md">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="w-full max-w-2xl mx-auto px-2 sm:px-3 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
@@ -332,7 +332,7 @@ export const SurahReaderView: React.FC<SurahReaderViewProps> = ({
       )}
 
       {/* Main Surah Card Cover */}
-      <div className="max-w-md mx-auto px-4 mt-4">
+      <div className="w-full max-w-2xl mx-auto px-1 sm:px-2 mt-4">
         <div className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-[#04281e] to-[#01140f] border border-emerald-700/60 shadow-xl text-center space-y-4">
           {/* Subtle islamic background patterns */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl"></div>
@@ -372,7 +372,7 @@ export const SurahReaderView: React.FC<SurahReaderViewProps> = ({
       </div>
 
       {/* Verses Container */}
-      <div className="max-w-md mx-auto px-4 mt-6 space-y-4">
+      <div className="w-full max-w-2xl mx-auto px-1 sm:px-2 mt-6 space-y-4">
         {surah.ayahs.map((ayah, idx) => {
           const isSelected = activeAyah === ayah.ayahNumber;
           const isBookmarked = isBookmarkedState[ayah.ayahNumber] || false;

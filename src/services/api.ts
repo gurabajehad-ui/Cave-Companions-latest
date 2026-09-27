@@ -228,6 +228,10 @@ export function getStoredAdminToken(): string | null {
               localStorage.getItem('cave_companions_admin_key');
               
   if (!token) {
+    const userToken = localStorage.getItem(TOKEN_KEY);
+    if (userToken && isValidTokenType(userToken, 'admin')) {
+      return userToken;
+    }
     const merchantToken = localStorage.getItem(MERCHANT_TOKEN_KEY);
     if (merchantToken && isValidTokenType(merchantToken, 'admin')) {
       return merchantToken;
@@ -240,6 +244,10 @@ export function getStoredAdminToken(): string | null {
     localStorage.removeItem(ADMIN_TOKEN_KEY);
     sessionStorage.removeItem('admin_token');
     localStorage.removeItem('admin_token');
+    const userToken = localStorage.getItem(TOKEN_KEY);
+    if (userToken && isValidTokenType(userToken, 'admin')) {
+      return userToken;
+    }
     const merchantToken = localStorage.getItem(MERCHANT_TOKEN_KEY);
     if (merchantToken && isValidTokenType(merchantToken, 'admin')) {
       return merchantToken;
@@ -346,7 +354,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}, isMerchan
                             !endpoint.includes('/otp');
 
   if ((endpoint.startsWith('/api/admin/') || endpoint.includes('/admin/')) && endpoint !== '/api/admin/verify') {
-    token = getStoredAdminToken() || getStoredMerchantToken() || getStoredToken();
+    token = getStoredAdminToken();
   } else if (isRiderEndpoint) {
     token = getStoredRiderToken();
   } else if (isMerchant || isMerchantEndpoint) {

@@ -98,18 +98,12 @@ export const MerchantRegistrationWizard: React.FC<MerchantRegistrationWizardProp
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
 
-  // Step 1: Credentials & OTP
+  // Step 1: Credentials
   const [ownerName, setOwnerName] = useState(initialData?.ownerName || '');
   const [phone, setPhone] = useState(initialData?.phone || '');
   const [email, setEmail] = useState(initialData?.email || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
 
   // Step 2: Shop Info
   const [shopName, setShopName] = useState(initialData?.shopName || '');
@@ -235,65 +229,19 @@ export const MerchantRegistrationWizard: React.FC<MerchantRegistrationWizardProp
     }
   };
 
-  // Step 1: Send OTP
-  const handleSendOtp = async () => {
-    if (!phone || phone.trim().length < 11) {
-      onShowToast?.('error', 'ইনপুট ত্রুটি', 'সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।');
-      return;
-    }
-
-    try {
-      setIsSendingOtp(true);
-      const res = await api.requestMerchantOtp(phone);
-      if (res.success) {
-        setOtpSent(true);
-        if (res.devOtpCode) setDevOtpHint(res.devOtpCode);
-        onShowToast?.('success', 'ওটিপি পাঠানো হয়েছে', res.message);
-      } else {
-        onShowToast?.('error', 'ব্যর্থ', res.message);
-      }
-    } catch (err: any) {
-      onShowToast?.('error', 'ত্রুটি', err.message || 'ওটিপি পাঠাতে সমস্যা হয়েছে।');
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
-
-  // Step 1: Verify OTP
-  const handleVerifyOtp = async () => {
-    if (!otpCode || otpCode.length !== 6) {
-      onShowToast?.('error', 'ইনপুট ত্রুটি', '৬ ডিজিটের ওটিপি কোড দিন।');
-      return;
-    }
-
-    try {
-      setIsVerifyingOtp(true);
-      const res = await api.verifyMerchantOtp(phone, otpCode);
-      if (res.success) {
-        setOtpVerified(true);
-        onShowToast?.('success', 'যাচাই সফল', 'মোবাইল নম্বর সফলভাবে যাচাই করা হয়েছে।');
-      } else {
-        onShowToast?.('error', 'যাচাই ব্যর্থ', res.message);
-      }
-    } catch (err: any) {
-      onShowToast?.('error', 'ত্রুটি', err.message || 'ওটিপি যাচাই ব্যর্থ।');
-    } finally {
-      setIsVerifyingOtp(false);
-    }
-  };
-
   // Step 1 Validation
   const validateStep1 = () => {
     if (!ownerName.trim()) {
       onShowToast?.('error', 'ইনপুট ত্রুটি', 'মালিকের পূর্ণ নাম লিখুন।');
       return false;
     }
-    if (!phone.trim()) {
+    const cleanPhone = phone.trim().replace(/[\s-]/g, '');
+    if (!cleanPhone) {
       onShowToast?.('error', 'ইনপুট ত্রুটি', 'মোবাইল নম্বর লিখুন।');
       return false;
     }
-    if (!otpVerified) {
-      onShowToast?.('error', 'ওটিপি আবশ্যক', 'মোবাইল নম্বর ওটিপি দিয়ে যাচাই করুন।');
+    if (!/^01[3-9]\d{8}$/.test(cleanPhone)) {
+      onShowToast?.('error', 'ইনপুট ত্রুটি', 'সঠিক ১০/১১ ডিজিটের বাংলাদেশি মোবাইল নম্বর প্রদান করুন।');
       return false;
     }
     if (!password || password.length < 6) {
@@ -600,79 +548,20 @@ export const MerchantRegistrationWizard: React.FC<MerchantRegistrationWizardProp
 
               <div>
                 <label className="block text-xs font-medium text-emerald-300 mb-1">
-                  মোবাইল নম্বর (ওটিপি যাচাইযোগ্য) <span className="text-rose-400">*</span>
+                  মোবাইল নম্বর <span className="text-rose-400">*</span>
                 </label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Phone className="w-4 h-4 absolute left-3 top-3 text-emerald-500" />
-                    <input
-                      type="tel"
-                      disabled={otpVerified}
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="017xxxxxxxx"
-                      className="w-full bg-emerald-900/40 border border-emerald-700/50 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-emerald-600 focus:outline-none focus:border-emerald-400 disabled:opacity-60"
-                    />
-                  </div>
-                  {!otpVerified && (
-                    <button
-                      type="button"
-                      onClick={handleSendOtp}
-                      disabled={isSendingOtp}
-                      className="px-3.5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-amber-950 font-semibold text-xs transition-all whitespace-nowrap disabled:opacity-50"
-                    >
-                      {isSendingOtp ? 'পাঠানো হচ্ছে...' : otpSent ? 'পুনরায় পাঠান' : 'ওটিপি পাঠান'}
-                    </button>
-                  )}
+                <div className="relative">
+                  <Phone className="w-4 h-4 absolute left-3 top-3 text-emerald-500" />
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="017xxxxxxxx"
+                    className="w-full bg-emerald-900/40 border border-emerald-700/50 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-emerald-600 focus:outline-none focus:border-emerald-400"
+                  />
                 </div>
               </div>
             </div>
-
-            {/* OTP Verification Box */}
-            {otpSent && !otpVerified && (
-              <div className="bg-amber-950/40 border border-amber-500/40 rounded-xl p-3.5 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-amber-200 font-medium flex items-center gap-1.5">
-                    <Shield className="w-4 h-4 text-amber-400" /> আপনার মোবাইলে পাঠানো ৬ ডিজিটের ওটিপি লিখুন
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setOtpCode(devOtpHint || '123456')}
-                    className="text-[11px] bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 px-2 py-0.5 rounded font-mono font-bold transition-colors cursor-pointer"
-                    title="ক্লিক করে ওটিপি বসান"
-                  >
-                    Dev OTP: {devOtpHint || '123456'} 📋
-                  </button>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    maxLength={6}
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value)}
-                    placeholder="******"
-                    className="flex-1 bg-emerald-950/80 border border-amber-500/50 rounded-lg px-3 py-2 text-center text-lg tracking-widest font-mono text-white focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleVerifyOtp}
-                    disabled={isVerifyingOtp}
-                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-bold text-xs rounded-lg transition-colors"
-                  >
-                    {isVerifyingOtp ? 'যাচাই হচ্ছে...' : 'ওটিপি দিন'}
-                  </button>
-                </div>
-                <p className="text-[10px] text-amber-300/80 leading-tight">
-                  💡 ডেমো হোস্টিংয়ে কোনো আসল SMS যাবে না। মার্চেন্ট অ্যাকাউন্ট ভেরিফাই করতে উপরের ওটিপি অথবা ইউনিভার্সাল টেস্ট কোড <strong className="font-mono text-amber-200 bg-amber-900/50 px-1 rounded cursor-pointer" onClick={() => setOtpCode('123456')}>123456</strong> ব্যবহার করুন।
-                </p>
-              </div>
-            )}
-
-            {otpVerified && (
-              <div className="flex items-center gap-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-2 rounded-xl text-xs font-medium">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> মোবাইল নম্বর সফলভাবে ওটিপি দ্বারা যাচাই করা হয়েছে।
-              </div>
-            )}
 
             <div>
               <label className="block text-xs font-medium text-emerald-300 mb-1">

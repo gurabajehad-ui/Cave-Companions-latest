@@ -22,7 +22,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
   const { t, language } = useLanguage();
 
   return (
-    <header className="w-full px-3.5 pt-2 pb-1 max-w-2xl mx-auto" style={{ contain: 'layout style', transform: 'translateZ(0)' }}>
+    <header className="w-full px-1.5 sm:px-3 pt-2 pb-1 max-w-2xl mx-auto" style={{ contain: 'layout style', transform: 'translateZ(0)' }}>
       <div className="rounded-3xl border border-[#0c4334] bg-[#022119] px-4 py-3 shadow-md text-white space-y-3">
         {/* Top Row: Logo + Prominent Cave Companions + Circular Action Buttons */}
         <div className="flex items-center justify-between gap-3">

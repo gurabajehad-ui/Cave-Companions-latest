@@ -410,7 +410,8 @@ export type ActiveTab =
   | 'quran'
   | 'hisnul_muslim'
   | 'blog'
-  | 'cave_circle';
+  | 'cave_circle'
+  | 'token_rules';
 
 export interface HisnulMuslimDua {
   id: string;
@@ -1039,6 +1040,10 @@ export interface JourneyTeaser {
   primaryStat: string;
   secondaryStat: string;
   badgeText: string;
+  headlineEn?: string;
+  primaryStatEn?: string;
+  secondaryStatEn?: string;
+  badgeTextEn?: string;
 }
 
 export interface JourneySummaryResponse {

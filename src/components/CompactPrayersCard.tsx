@@ -12,8 +12,7 @@ import {
   CloudUpload, 
   RefreshCw, 
   MapPin,
-  CalendarDays,
-  HelpCircle
+  CalendarDays
 } from 'lucide-react';
 import { PrayerInfo, TodayPrayerStatus, PrayerType } from '../types';
 import { PRAYERS_CONFIG, toBnNumber, formatBnTime } from '../data/prayerConfig';
@@ -290,7 +289,7 @@ export const CompactPrayersCard: React.FC<CompactPrayersCardProps> = React.memo(
               key={`cpc-row-${row.type}-${idx}`}
               className={`p-3 sm:px-4 transition-colors ${
                 row.isActive 
-                  ? 'bg-[#033628] border-l-2 border-l-amber-400' 
+                  ? (row.isCompleted ? 'bg-[#033628] border-l-2 border-l-emerald-400' : 'bg-[#033628] border-l-2 border-l-amber-400')
                   : 'hover:bg-[#033024]/40'
               }`}
             >
@@ -300,10 +299,10 @@ export const CompactPrayersCard: React.FC<CompactPrayersCardProps> = React.memo(
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className={`p-1.5 rounded-lg shrink-0 ${
                     row.isCompleted
-                      ? 'bg-emerald-500/20 text-emerald-400'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                       : row.isActive
-                        ? 'bg-amber-400/20 text-amber-300'
-                        : 'bg-[#033024] text-emerald-300/80 border border-[#0a4838]'
+                        ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
+                        : 'bg-amber-400/10 text-amber-300/90 border border-amber-400/20'
                   }`}>
                     {row.icon}
                   </div>
@@ -311,12 +310,14 @@ export const CompactPrayersCard: React.FC<CompactPrayersCardProps> = React.memo(
                   <div className="flex flex-col min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className={`text-sm font-bold truncate ${
-                        row.isActive ? 'text-amber-300' : 'text-slate-100'
+                        row.isCompleted 
+                          ? 'text-emerald-300' 
+                          : (row.isActive ? 'text-amber-300' : 'text-slate-100')
                       }`}>
                         {row.displayName}
                       </span>
                       {row.isActive && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${row.isCompleted ? 'bg-emerald-400' : 'bg-amber-400'}`} />
                       )}
                       {row.rakats && (
                         <span className="text-[9px] px-1 py-0.2 rounded bg-[#033024] text-emerald-200 border border-[#0a4838]">
@@ -333,32 +334,35 @@ export const CompactPrayersCard: React.FC<CompactPrayersCardProps> = React.memo(
                 {/* Right: Action or Status */}
                 <div className="shrink-0 flex items-center">
                   {row.isCompleted ? (
-                    <div className="flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-[#033024] border border-[#0a4838] px-2.5 py-1 rounded-lg">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>{row.pendingOffline ? t('common.offline') : (row.attendance?.attendanceType === 'home' || isFemale ? t('common.completed') : t('common.jamaah'))}</span>
+                    <div className="py-1.5 px-3.5 rounded-lg font-bold text-xs flex items-center gap-1.5 text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 border border-emerald-400 shadow-md shadow-emerald-950/40 select-none">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-white shrink-0 stroke-[2.5]" />
+                      <span>
+                        {row.pendingOffline
+                          ? t('common.offline')
+                          : (row.attendance?.attendanceType === 'home' || isFemale
+                              ? t('common.completed')
+                              : t('common.jamaah'))}
+                      </span>
                     </div>
                   ) : (
                     <button
                       onClick={() => !row.isVerifying && onCompletePrayer(row.config)}
                       disabled={row.isVerifying}
-                      className={`py-1.5 px-3 rounded-lg font-bold text-xs flex items-center gap-1.5 transition cursor-pointer active:scale-95 ${
+                      className={`py-1.5 px-3.5 rounded-lg font-black text-xs flex items-center gap-1.5 transition cursor-pointer active:scale-95 shadow-md ${
                         row.isVerifying
-                          ? 'bg-[#033024] text-emerald-400 opacity-80 cursor-not-allowed border border-[#0a4838]'
+                          ? 'bg-amber-500/20 text-amber-300 opacity-80 cursor-not-allowed border border-amber-500/30'
                           : row.isActive
-                            ? 'bg-emerald-700 hover:bg-emerald-600 text-white shadow-xs'
-                            : 'bg-[#033024] hover:bg-[#043f2f] text-emerald-100 border border-[#0a4838]'
+                            ? 'bg-gradient-to-r from-amber-300 via-yellow-300 to-amber-500 hover:from-yellow-200 hover:to-amber-400 text-slate-950 border border-yellow-200 ring-2 ring-amber-300/80 ring-offset-1 ring-offset-[#021b14] shadow-amber-500/30'
+                            : 'bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 border border-yellow-200/90 ring-2 ring-amber-400/60 ring-offset-1 ring-offset-[#021b14] shadow-amber-500/25'
                       }`}
                     >
                       {row.isVerifying ? (
                         <>
-                          <Loader2 className="w-3 h-3 animate-spin text-amber-400" />
                           <span>{t('common.verifying')}</span>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-950 shrink-0" />
                         </>
                       ) : (
-                        <>
-                          <HelpCircle className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-                          <span>{t('prayer.prayed')}</span>
-                        </>
+                        <span>{t('prayer.prayed')}?</span>
                       )}
                     </button>
                   )}

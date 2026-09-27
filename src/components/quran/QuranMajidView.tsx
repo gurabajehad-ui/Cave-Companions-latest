@@ -207,7 +207,7 @@ export const QuranMajidView: React.FC<QuranMajidViewProps> = ({ onBack, onShowTo
       <div className={selectedSurah !== null ? 'hidden' : ''}>
       {/* Premium Navigation Header */}
       <div className="sticky top-0 z-30 bg-[#02110c]/95 backdrop-blur-md border-b border-emerald-900/60 shadow-md">
-        <div className="max-w-md mx-auto px-4 py-3.5 flex items-center justify-between">
+        <div className="w-full max-w-2xl mx-auto px-1.5 sm:px-3 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
@@ -250,7 +250,7 @@ export const QuranMajidView: React.FC<QuranMajidViewProps> = ({ onBack, onShowTo
         </div>
       </div>
 
-      <div className="max-w-md mx-auto px-4 mt-4 space-y-4">
+      <div className="w-full max-w-2xl mx-auto px-0.5 sm:px-1 mt-3 space-y-3">
         {/* Continue Reading (Last Read) Widget */}
         {lastRead && (
           <div

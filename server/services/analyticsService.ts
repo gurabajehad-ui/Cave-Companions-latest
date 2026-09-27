@@ -266,7 +266,7 @@ export async function getAnalyticsDashboardData(filter: AnalyticsDateFilter) {
        prayer_type,
        date,
        COUNT(*) as total_count,
-       COUNT(*) FILTER (WHERE qr_payload IS NOT NULL AND qr_payload != '') as qr_count
+       COALESCE(SUM(CASE WHEN qr_payload IS NOT NULL AND qr_payload != '' THEN 1 ELSE 0 END), 0) as qr_count
      FROM prayer_attendances
      WHERE date BETWEEN $1 AND $2
      GROUP BY prayer_type, date`,
@@ -501,7 +501,7 @@ export async function getAnalyticsDashboardData(filter: AnalyticsDateFilter) {
        m.district,
        COUNT(p.id) as total_prayers,
        COUNT(DISTINCT p.user_id) as active_users,
-       COUNT(p.id) FILTER (WHERE p.qr_payload IS NOT NULL AND p.qr_payload != '') as qr_verifications
+       COALESCE(SUM(CASE WHEN p.qr_payload IS NOT NULL AND p.qr_payload != '' THEN 1 ELSE 0 END), 0) as qr_verifications
      FROM mosques m
      LEFT JOIN prayer_attendances p ON m.id = p.mosque_id AND p.date BETWEEN $1 AND $2
      WHERE m.status = 'active'

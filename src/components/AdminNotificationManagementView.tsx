@@ -15,7 +15,7 @@ import {
   Sliders,
   Send
 } from 'lucide-react';
-import { api } from '../services/api';
+import { api, getStoredAdminToken } from '../services/api';
 import { NotificationTemplate } from '../types';
 
 interface AdminNotificationManagementViewProps {
@@ -47,6 +47,11 @@ export const AdminNotificationManagementView: React.FC<AdminNotificationManageme
   const [previewLoading, setPreviewLoading] = useState<boolean>(false);
 
   const fetchTemplates = async () => {
+    const token = getStoredAdminToken();
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await api.getAdminNotificationTemplates();

@@ -320,7 +320,7 @@ export const CaveMarketView: React.FC = () => {
   const selectedCatObj = MARKET_CATEGORIES.find(c => c.id === selectedCategory);
 
   return (
-    <div className="space-y-4 max-w-5xl mx-auto pb-24 px-3 sm:px-4 pt-3 sm:pt-4">
+    <div className="w-full space-y-3.5 pb-24 select-none">
       {/* Ultra Compact Cave Market Header */}
       <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-900 rounded-xl sm:rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-3 text-white border border-emerald-500/30 shadow-md relative overflow-hidden">
         <div className="flex items-center justify-between gap-3 relative z-10">

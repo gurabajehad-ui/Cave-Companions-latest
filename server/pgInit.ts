@@ -1,4 +1,4 @@
-import { pool } from './pg.js';
+import { pool, useSqliteFallback } from './pg.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -1182,56 +1182,58 @@ export async function initPostgresSchema() {
         console.error('[Migration:BackfillCommissionPayment] Error:', err);
       }
 
-      // Backfill missing donation info and mosque names for existing records
-      try {
-        await client.query(`
-          UPDATE redemptions r
-          SET 
-            is_donated = t.is_donated,
-            donated_amount = CASE WHEN t.is_donated = TRUE THEN (r.bill_amount * r.discount_percent / 100) ELSE 0 END,
-            earned_mosque_id = COALESCE(r.earned_mosque_id, t.earned_mosque_id),
-            earned_mosque_name = COALESCE(r.earned_mosque_name, t.earned_mosque_name)
-          FROM tokens t
-          WHERE r.token_id = t.id AND (t.is_donated = TRUE OR (t.earned_mosque_name IS NOT NULL AND r.earned_mosque_name IS NULL));
+      // Backfill missing donation info and mosque names for existing records (PostgreSQL only)
+      if (!useSqliteFallback) {
+        try {
+          await client.query(`
+            UPDATE redemptions r
+            SET 
+              is_donated = t.is_donated,
+              donated_amount = CASE WHEN t.is_donated = TRUE THEN (r.bill_amount * r.discount_percent / 100) ELSE 0 END,
+              earned_mosque_id = COALESCE(r.earned_mosque_id, t.earned_mosque_id),
+              earned_mosque_name = COALESCE(r.earned_mosque_name, t.earned_mosque_name)
+            FROM tokens t
+            WHERE r.token_id = t.id AND (t.is_donated = TRUE OR (t.earned_mosque_name IS NOT NULL AND r.earned_mosque_name IS NULL));
 
-          UPDATE redemptions r
-          SET 
-            earned_mosque_id = COALESCE(r.earned_mosque_id, pa.mosque_id),
-            earned_mosque_name = COALESCE(r.earned_mosque_name, pa.mosque_name)
-          FROM (
-            SELECT DISTINCT ON (user_id) user_id, mosque_id, mosque_name
-            FROM prayer_attendances
-            WHERE mosque_name IS NOT NULL AND mosque_name != ''
-            ORDER BY user_id, verified_at DESC
-          ) pa
-          WHERE r.user_id = pa.user_id AND (r.earned_mosque_name IS NULL OR r.earned_mosque_name = '');
+            UPDATE redemptions r
+            SET 
+              earned_mosque_id = COALESCE(r.earned_mosque_id, pa.mosque_id),
+              earned_mosque_name = COALESCE(r.earned_mosque_name, pa.mosque_name)
+            FROM (
+              SELECT DISTINCT ON (user_id) user_id, mosque_id, mosque_name
+              FROM prayer_attendances
+              WHERE mosque_name IS NOT NULL AND mosque_name != ''
+              ORDER BY user_id, verified_at DESC
+            ) pa
+            WHERE r.user_id = pa.user_id AND (r.earned_mosque_name IS NULL OR r.earned_mosque_name = '');
 
-          UPDATE online_financial_records ofr
-          SET 
-            earned_mosque_id = COALESCE(ofr.earned_mosque_id, pa.mosque_id),
-            earned_mosque_name = COALESCE(ofr.earned_mosque_name, pa.mosque_name)
-          FROM (
-            SELECT DISTINCT ON (user_id) user_id, mosque_id, mosque_name
-            FROM prayer_attendances
-            WHERE mosque_name IS NOT NULL AND mosque_name != ''
-            ORDER BY user_id, verified_at DESC
-          ) pa
-          WHERE ofr.user_id = pa.user_id AND (ofr.earned_mosque_name IS NULL OR ofr.earned_mosque_name = '');
+            UPDATE online_financial_records ofr
+            SET 
+              earned_mosque_id = COALESCE(ofr.earned_mosque_id, pa.mosque_id),
+              earned_mosque_name = COALESCE(ofr.earned_mosque_name, pa.mosque_name)
+            FROM (
+              SELECT DISTINCT ON (user_id) user_id, mosque_id, mosque_name
+              FROM prayer_attendances
+              WHERE mosque_name IS NOT NULL AND mosque_name != ''
+              ORDER BY user_id, verified_at DESC
+            ) pa
+            WHERE ofr.user_id = pa.user_id AND (ofr.earned_mosque_name IS NULL OR ofr.earned_mosque_name = '');
 
-          UPDATE tokens t
-          SET 
-            earned_mosque_id = COALESCE(t.earned_mosque_id, pa.mosque_id),
-            earned_mosque_name = COALESCE(t.earned_mosque_name, pa.mosque_name)
-          FROM (
-            SELECT DISTINCT ON (user_id) user_id, mosque_id, mosque_name
-            FROM prayer_attendances
-            WHERE mosque_name IS NOT NULL AND mosque_name != ''
-            ORDER BY user_id, verified_at DESC
-          ) pa
-          WHERE t.user_id = pa.user_id AND (t.earned_mosque_name IS NULL OR t.earned_mosque_name = '');
-        `);
-      } catch (backfillErr) {
-        console.warn('[PostgreSQL] Optional backfill warning (ignored):', backfillErr);
+            UPDATE tokens t
+            SET 
+              earned_mosque_id = COALESCE(t.earned_mosque_id, pa.mosque_id),
+              earned_mosque_name = COALESCE(t.earned_mosque_name, pa.mosque_name)
+            FROM (
+              SELECT DISTINCT ON (user_id) user_id, mosque_id, mosque_name
+              FROM prayer_attendances
+              WHERE mosque_name IS NOT NULL AND mosque_name != ''
+              ORDER BY user_id, verified_at DESC
+            ) pa
+            WHERE t.user_id = pa.user_id AND (t.earned_mosque_name IS NULL OR t.earned_mosque_name = '');
+          `);
+        } catch (backfillErr) {
+          console.warn('[PostgreSQL] Optional backfill warning (ignored):', backfillErr);
+        }
       }
 
     await client.query('COMMIT');
